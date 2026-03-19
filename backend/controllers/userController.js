@@ -106,3 +106,34 @@ export const sendReminderEmail = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+// Employee: get own profile
+export const getMyProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select("-password");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    const orders = await Order.find({ employeeId: req.user.userId });
+    const totalOrders = orders.length;
+    const totalQty = orders.reduce((s, o) => s + (o.quantity || 0), 0);
+    res.json({ ...user.toObject(), totalOrders, totalQty });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Employee: update own profile
+export const updateMyProfile = async (req, res) => {
+  try {
+    // Prevent role/password escalation
+    const { password, role, monthlyTarget, ...safe } = req.body;
+    const updated = await User.findByIdAndUpdate(
+      req.user.userId,
+      { ...safe, profileComplete: true },
+      { new: true, runValidators: true }
+    ).select("-password");
+    if (!updated) return res.status(404).json({ message: "User not found" });
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};

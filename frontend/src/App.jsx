@@ -9,6 +9,7 @@ import OrdersPage from "./pages/OrdersPage";
 import EmployeesPage from "./pages/EmployeesPage";
 import EmployeeDetailPage from "./pages/EmployeeDetailPage";
 import SettingsPage from "./pages/SettingsPage";
+import ProfileSetupPage from "./pages/ProfileSetupPage";
 import { useAuthStore } from "./store/useAuthStore";
 
 function ProtectedRoute({ children }) {
@@ -34,18 +35,24 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+
+      {/* Profile setup — protected but outside main layout */}
+      <Route path="/profile-setup" element={
+        <ProtectedRoute><ProfileSetupPage /></ProtectedRoute>
+      } />
+
       <Route element={
-        <ProtectedRoute>
-          <Layout />
-        </ProtectedRoute>
+        <ProtectedRoute><Layout /></ProtectedRoute>
       }>
         <Route path="/dashboard" element={<DashboardRoute />} />
         <Route path="/dashboard/configure" element={<DashboardConfigPage />} />
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/employees" element={<AdminRoute><EmployeesPage /></AdminRoute>} />
         <Route path="/employees/:id" element={<AdminRoute><EmployeeDetailPage /></AdminRoute>} />
-        <Route path="/settings" element={<AdminRoute><SettingsPage /></AdminRoute>} />
+        {/* Settings accessible by all roles */}
+        <Route path="/settings" element={<SettingsPage />} />
       </Route>
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

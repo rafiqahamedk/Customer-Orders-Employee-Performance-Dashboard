@@ -48,4 +48,12 @@ export const useAuthStore = create((set) => ({
     localStorage.removeItem("hx_user");
     set({ user: null });
   },
+
+  updateUser: (patch) => {
+    set((s) => {
+      const updated = { ...s.user, ...patch };
+      localStorage.setItem("hx_user", JSON.stringify(updated));
+      return { user: updated };
+    });
+  },
 }));

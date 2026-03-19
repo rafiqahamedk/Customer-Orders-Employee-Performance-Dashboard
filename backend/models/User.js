@@ -10,7 +10,10 @@ const userSchema = new mongoose.Schema({
   dateOfJoining: { type: Date },
   experienceYears: { type: Number, default: 0 },
   experienceType: { type: String, default: "" },
+  department: { type: String, default: "" },
+  phone: { type: String, default: "" },
   monthlyTarget: { type: Number, default: 150 },
+  profileComplete: { type: Boolean, default: false },
 }, { timestamps: true });
 
 export default mongoose.model("User", userSchema);

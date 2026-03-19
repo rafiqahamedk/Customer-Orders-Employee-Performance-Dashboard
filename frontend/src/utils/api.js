@@ -11,6 +11,8 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+export default api;
+
 export const authApi = {
   register: (data) => api.post("/auth/register", data).then((r) => r.data),
   login: (data) => api.post("/auth/login", data).then((r) => r.data),
@@ -35,6 +37,9 @@ export const usersApi = {
   updateEmployee: (id, data) => api.put(`/users/${id}`, data).then((r) => r.data),
   setTarget: (id, monthlyTarget) => api.put(`/users/${id}/target`, { monthlyTarget }).then((r) => r.data),
   sendReminder: (id) => api.post(`/users/${id}/remind`).then((r) => r.data),
+  // Employee self-profile
+  getMyProfile: () => api.get("/users/me").then((r) => r.data),
+  updateMyProfile: (data) => api.put("/users/me", data).then((r) => r.data),
 };
 
 export const notificationsApi = {

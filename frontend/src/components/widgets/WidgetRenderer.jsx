@@ -7,16 +7,25 @@ import ScatterWidget from "./ScatterWidget";
 import PieWidget from "./PieWidget";
 import TableWidget from "./TableWidget";
 
-export default function WidgetRenderer({ widget, orders }) {
-  const props = { widget, orders };
-  switch (widget.type) {
-    case "kpi":     return <KpiWidget {...props} />;
-    case "bar":     return <BarWidget {...props} />;
-    case "line":    return <LineWidget {...props} />;
-    case "area":    return <AreaWidget {...props} />;
-    case "scatter": return <ScatterWidget {...props} />;
-    case "pie":     return <PieWidget {...props} />;
-    case "table":   return <TableWidget {...props} />;
-    default:        return <div style={{ padding: 16, color: "#999" }}>Unknown widget</div>;
-  }
+// Supports both old short names (kpi, bar, line...) and spec names (kpi, bar_chart, line_chart...)
+const WIDGET_MAP = {
+  kpi: KpiWidget,
+  bar: BarWidget,
+  bar_chart: BarWidget,
+  line: LineWidget,
+  line_chart: LineWidget,
+  area: AreaWidget,
+  area_chart: AreaWidget,
+  scatter: ScatterWidget,
+  scatter_plot: ScatterWidget,
+  pie: PieWidget,
+  pie_chart: PieWidget,
+  table: TableWidget,
+};
+
+export default function WidgetRenderer({ widget }) {
+  const type = widget?.widget_type || widget?.type;
+  const Component = WIDGET_MAP[type];
+  if (!Component) return <div className="p-4 text-muted text-sm">Unknown widget type: {type}</div>;
+  return <Component widget={widget} />;
 }

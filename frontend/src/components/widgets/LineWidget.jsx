@@ -1,23 +1,48 @@
 import React from "react";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, LabelList } from "recharts";
-import { buildChartData } from "../../utils/dataHelpers";
+import {
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis,
+  Tooltip, CartesianGrid, LabelList,
+} from "recharts";
+import { useWidgetData } from "../../hooks/useWidgetData";
 import EmptyChart from "./EmptyChart";
 
-export default function LineWidget({ widget, orders }) {
+export default function LineWidget({ widget }) {
   const cfg = widget.config || {};
-  if (!cfg.xAxis || !cfg.yAxis) return <EmptyChart label="Configure X & Y axis" />;
-  const data = buildChartData(orders, cfg.xAxis, cfg.yAxis);
-  const color = cfg.color || "#54bd95";
+  const { data, isLoading } = useWidgetData(widget);
+
+  if (!cfg.xAxis && !cfg.x_axis) return <EmptyChart label="Configure X & Y axis" />;
+
+  if (isLoading) {
+    return <div className="h-full w-full rounded-lg bg-gray-200 dark:bg-gray-700 animate-pulse" />;
+  }
+
+  const chartData = (data?.labels || []).map((label, i) => ({
+    name: label,
+    value: data?.values?.[i] || 0,
+  }));
+
+  const color = cfg.chart_color || cfg.color || "#54bd95";
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 24 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+      <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 24 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
         <XAxis dataKey="name" tick={{ fontSize: 11 }} />
         <YAxis tick={{ fontSize: 11 }} />
-        <Tooltip />
-        <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={{ r: 4 }}>
-          {cfg.showDataLabel && <LabelList dataKey="value" position="top" style={{ fontSize: 10 }} />}
+        <Tooltip
+          contentStyle={{ borderRadius: 10, border: "none", boxShadow: "0 4px 16px rgba(0,0,0,0.12)" }}
+        />
+        <Line
+          type="monotone"
+          dataKey="value"
+          stroke={color}
+          strokeWidth={2.5}
+          dot={{ fill: color, r: 4 }}
+          activeDot={{ r: 6 }}
+        >
+          {(cfg.show_data_labels || cfg.showDataLabel) && (
+            <LabelList dataKey="value" position="top" style={{ fontSize: 10 }} />
+          )}
         </Line>
       </LineChart>
     </ResponsiveContainer>

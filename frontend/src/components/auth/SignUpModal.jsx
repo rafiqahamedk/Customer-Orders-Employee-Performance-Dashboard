@@ -37,7 +37,8 @@ export default function SignUpModal({ onClose, onSwitchToSignIn }) {
     const result = await signUp({ name: form.name, role: form.role, email: form.email, password: form.password });
     if (result.success) {
       onClose();
-      navigate("/dashboard");
+      const role = form.role.toLowerCase();
+      navigate(role === "employee" ? "/profile-setup" : "/dashboard");
     } else {
       setApiError(result.error || "Registration failed");
     }

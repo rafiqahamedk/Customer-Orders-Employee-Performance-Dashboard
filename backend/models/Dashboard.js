@@ -9,7 +9,6 @@ const widgetSchema = new mongoose.Schema({
   },
   title: { type: String, default: "Untitled" },
   description: { type: String, default: "" },
-  // react-grid-layout position
   layout: {
     x: { type: Number, default: 0 },
     y: { type: Number, default: 0 },
@@ -21,6 +20,8 @@ const widgetSchema = new mongoose.Schema({
 
 const dashboardSchema = new mongoose.Schema(
   {
+    // null = global admin dashboard, ObjectId = per-user dashboard
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
     widgets: [widgetSchema],
     dateFilter: {
       type: String,

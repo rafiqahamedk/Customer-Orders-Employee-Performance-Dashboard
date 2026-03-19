@@ -8,6 +8,7 @@ import dashboardRoutes from "./routes/dashboard.js";
 import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/users.js";
 import notificationRoutes from "./routes/notifications.js";
+import dataRoutes from "./routes/data.js";
 import { generatePerformanceInsights } from "./controllers/notificationController.js";
 
 const app = express();
@@ -20,6 +21,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/data", dataRoutes);
 
 app.get("/", (req, res) => res.json({ status: "Halleyx API running" }));
 

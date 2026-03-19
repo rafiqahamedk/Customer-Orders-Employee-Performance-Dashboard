@@ -1,85 +1,129 @@
 import React, { useState } from "react";
-import { getFieldValue } from "../../utils/dataHelpers";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useWidgetData } from "../../hooks/useWidgetData";
 
 const COL_LABELS = {
-  customerId: "Customer ID", customerName: "Customer", email: "Email",
-  phone: "Phone", address: "Address", orderId: "Order ID",
-  orderDate: "Order Date", product: "Product", quantity: "Qty",
-  unitPrice: "Unit Price", totalAmount: "Total", status: "Status", createdBy: "Created By",
+  id: "ID", first_name: "First Name", last_name: "Last Name",
+  email: "Email", phone_number: "Phone", street_address: "Address",
+  country: "Country", product: "Product", quantity: "Qty",
+  unit_price: "Unit Price", total_amount: "Total", status: "Status",
+  created_by: "Created By", order_date: "Order Date",
 };
 
-export default function TableWidget({ widget, orders }) {
-  const cfg = widget.config || {};
-  const cols = cfg.columns?.length ? cfg.columns : ["customerName", "product", "status", "totalAmount"];
-  const [page, setPage] = useState(0);
-  const [filters, setFilters] = useState({});
-
-  const pageSize = cfg.pagination ? parseInt(cfg.pagination) : null;
-  const fontSize = cfg.fontSize || 14;
-  const headerBg = cfg.headerBg || "#54bd95";
-
-  let data = [...orders];
-  if (cfg.applyFilter) {
-    Object.entries(filters).forEach(([col, val]) => {
-      if (val) data = data.filter((o) => String(getFieldValue(o, col)).toLowerCase().includes(val.toLowerCase()));
-    });
+function formatCell(col, value) {
+  if (col === "id") return value ? String(value).slice(0, 8) + "..." : "";
+  if (col === "total_amount" || col === "unit_price") {
+    const n = parseFloat(value) || 0;
+    return "$" + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
-  if (cfg.sortBy === "asc") data.sort((a, b) => String(getFieldValue(a, cols[0])).localeCompare(String(getFieldValue(b, cols[0]))));
-  if (cfg.sortBy === "desc") data.sort((a, b) => String(getFieldValue(b, cols[0])).localeCompare(String(getFieldValue(a, cols[0]))));
-  if (cfg.sortBy === "orderDate") data.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
+  if (col === "order_date" && value) {
+    return new Date(value).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+  }
+  if (col === "status") {
+    const colors = {
+      Completed: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+      "In progress": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+      Pending: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+    };
+    return (
+      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${colors[value] || ""}`}>
+        {value}
+      </span>
+    );
+  }
+  return value ?? "";
+}
 
-  const totalPages = pageSize ? Math.ceil(data.length / pageSize) : 1;
-  const visible = pageSize ? data.slice(page * pageSize, (page + 1) * pageSize) : data;
+export default function TableWidget({ widget }) {
+  const cfg = widget.config || {};
+  const [page, setPage] = useState(1);
+
+  const widgetWithPage = { ...widget, config: { ...cfg, page } };
+  const { data, isLoading } = useWidgetData(widgetWithPage);
+
+  const headerBg = cfg.header_bg || cfg.headerBg || "#54bd95";
+  const fontSize = cfg.font_size || cfg.fontSize || 14;
+  const pageSize = cfg.page_size || cfg.pageSize || 10;
+  const columns = cfg.columns || ["id", "first_name", "product", "total_amount", "status", "order_date"];
+
+  if (isLoading) {
+    return (
+      <div className="h-full p-3 space-y-2">
+        <div className="w-full h-8 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="w-full h-6 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  const rows = data?.rows || [];
+  const total = data?.total || 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <div className="h-full flex flex-col overflow-hidden" style={{ fontSize }}>
-      {cfg.applyFilter && (
-        <div className="flex gap-1.5 p-2 border-b border-border flex-wrap">
-          {cols.map((col) => (
-            <input key={col} placeholder={COL_LABELS[col] || col}
-              value={filters[col] || ""}
-              onChange={(e) => { setFilters((f) => ({ ...f, [col]: e.target.value })); setPage(0); }}
-              className="flex-1 min-w-[80px] px-2 py-1 text-xs border border-border rounded-lg outline-none focus:border-primary bg-bg" />
-          ))}
-        </div>
-      )}
-      <div className="flex-1 overflow-auto scrollbar-thin">
-        <table className="w-full border-collapse">
+    <div className="h-full flex flex-col p-2 overflow-hidden">
+      <div className="flex-1 overflow-auto">
+        <table className="w-full text-left border-collapse" style={{ fontSize: `${fontSize}px` }}>
           <thead>
             <tr>
-              {cols.map((col) => (
-                <th key={col} className="px-3 py-2.5 text-left text-xs font-semibold text-white whitespace-nowrap sticky top-0"
-                  style={{ background: headerBg }}>
+              {columns.map((col) => (
+                <th
+                  key={col}
+                  className="px-3 py-2 text-white text-xs font-semibold uppercase tracking-wider whitespace-nowrap"
+                  style={{ backgroundColor: headerBg }}
+                >
                   {COL_LABELS[col] || col}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {visible.length === 0 ? (
-              <tr><td colSpan={cols.length} className="text-center py-8 text-muted text-sm">No data</td></tr>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length} className="text-center py-8 text-sm text-muted">
+                  No data found
+                </td>
+              </tr>
             ) : (
-              visible.map((o) => (
-                <tr key={o._id} className="hover:bg-bg transition-colors border-b border-border/50 last:border-0">
-                  {cols.map((col) => <td key={col} className="px-3 py-2.5 whitespace-nowrap text-dark/80">{String(getFieldValue(o, col))}</td>)}
+              rows.map((row, idx) => (
+                <tr
+                  key={idx}
+                  className="border-b border-border dark:border-[#1e2535] hover:bg-bg dark:hover:bg-white/5 transition"
+                >
+                  {columns.map((col) => (
+                    <td key={col} className="px-3 py-2 whitespace-nowrap text-dark dark:text-white/80">
+                      {formatCell(col, row[col])}
+                    </td>
+                  ))}
                 </tr>
               ))
             )}
           </tbody>
         </table>
       </div>
-      {pageSize && totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 p-2 border-t border-border text-xs text-muted">
-          <button disabled={page === 0} onClick={() => setPage(page - 1)}
-            className="w-6 h-6 rounded-lg border border-border flex items-center justify-center disabled:opacity-40 hover:border-primary hover:text-primary transition-all">
-            <ChevronLeft size={12} />
-          </button>
-          <span>{page + 1} / {totalPages}</span>
-          <button disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}
-            className="w-6 h-6 rounded-lg border border-border flex items-center justify-center disabled:opacity-40 hover:border-primary hover:text-primary transition-all">
-            <ChevronRight size={12} />
-          </button>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2 mt-1 border-t border-border dark:border-[#1e2535]">
+          <span className="text-xs text-muted">
+            Page {page} of {totalPages} ({total} records)
+          </span>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setPage(Math.max(1, page - 1))}
+              disabled={page <= 1}
+              className="p-1 rounded disabled:opacity-30 hover:bg-bg dark:hover:bg-white/10 text-muted transition"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={() => setPage(Math.min(totalPages, page + 1))}
+              disabled={page >= totalPages}
+              className="p-1 rounded disabled:opacity-30 hover:bg-bg dark:hover:bg-white/10 text-muted transition"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
       )}
     </div>
